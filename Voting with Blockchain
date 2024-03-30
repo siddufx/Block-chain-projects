@@ -1,0 +1,160 @@
+//SPDX-License-Identifier:MIT
+pragma solidity ^0.8.0;
+
+contract Election{
+    address public admin;
+
+    //enum is used here to add user defined data types
+    enum State{ NOT_STARTED, ONGOING, ENDED}
+    State public electionState;
+
+    //constructor is used here to define the admin is the owner
+    constructor () {
+        admin = msg.sender;
+        electionState=State.NOT_STARTED;
+    }
+    //structure candidate for add candidate details
+    struct Candidate{
+        string name;
+        string proposal;
+        address owner;
+        uint256 voteCount;
+    }
+    //structure voter to add voter details
+    struct Voter{      
+        string name;
+        bool hasVoted;
+        uint256  votedCandidateId;
+        bool hasDelegated;
+        address delegate;
+
+    }
+    //mapping for Candidate to store the data by using key and value pairs
+    mapping (uint256 => Candidate) Candidates;
+
+    //mapping for voters to store the data by uisng key and value pairs
+    mapping (address => Voter) Voters;
+
+ 
+
+
+   //To get the number of voters and candidates are register for the Election defined here.
+    uint256 public candidateCount;
+    uint256 public voterCount;
+   
+    //modifier function to define for functions that only admin call the function
+    modifier onlyAdmin() {
+    require (msg.sender==admin, "Only admin can call this function");
+    _;
+    }
+    //modifier function to define Election state
+    modifier beforeElectionStart(){
+        require (electionState==State.NOT_STARTED,"Election has already started");
+        _;
+    }
+    //modifier function to define election state
+    modifier onlyDuringElection(){
+        require (electionState==State.ONGOING,"Election is not ongoing");
+        _;
+    }
+    //modifier function is used here to allow only admin chech the status of the election
+    modifier onlyAdminDuringElection() {
+        require (electionState != State.ONGOING || msg.sender==admin,"only admin can perform this action during election ");
+        _;
+    }
+    //write function to add candidate details in the blockchain
+    function addCandidate(uint256 _id,string memory _name, string memory _proposal) public onlyAdmin beforeElectionStart {
+    Candidates[_id].name=_name;
+    Candidates[_id].proposal=_proposal;  
+    Candidates[_id].owner=msg.sender;
+    Candidates[_id].voteCount=0;
+    candidateCount++;
+    }
+
+
+
+// Write function to add voter details to the blockchain
+function addVoter(address _voter, string memory _name) public onlyAdmin beforeElectionStart {
+    // Add new voter to Voters mapping by using default values
+    Voters[_voter] = Voter({
+        name: _name,
+        hasVoted: false,
+        votedCandidateId:0,
+        hasDelegated:false,
+        delegate:address(0)
+    });
+    //increment voter by 1 when ever one voter is registered.
+    voterCount++;
+    }
+    //function to start the election
+    function startElection() public onlyAdmin beforeElectionStart {
+        electionState=State.ONGOING;
+    }
+    //Read function to read the candidate details by using his id
+    function candidateDetails(uint256 _id) public view returns(string memory name,
+    string memory proposal,address owner) {
+     return  (Candidates[_id].name,
+              Candidates[_id].proposal,
+              Candidates[_id].owner);
+    }
+    //read function to get voter profile by his address d
+    function voterProfile(address _voter) public view returns (
+        string memory name,
+        bool hasVoted,
+        uint256 votedCandidateId) {
+         //return voters details directly from the voter mapping
+         return (Voters[_voter].name,
+                 Voters[_voter].hasVoted,
+                 Voters[_voter].votedCandidateId);
+    }
+    
+
+//Function to Delegate the vote here delegation of voting right is giving another person to vote
+    function deligateTheVotingRight (address _delegate)public onlyDuringElection{
+    //require is used here
+    require (!Voters[msg.sender].hasVoted && !Voters[msg.sender].hasDelegated,"voter has already voted or delegated");
+    require ( _delegate !=msg.sender," can not delegate to youself");
+    Voters[msg.sender].hasDelegated=true;
+    Voters[msg.sender].delegate=_delegate;
+    }
+    //function to cast vote
+    function vote(uint256 _candidateId) public onlyDuringElection{
+    require (!Voters[msg.sender].hasVoted,"you have already voted");
+   
+    //updating vote count for the candidate
+    Candidates[_candidateId].voteCount++;
+   
+    //updating voter detail
+    Voters[msg.sender].hasVoted=true;
+    Voters[msg.sender].votedCandidateId=_candidateId;
+    }
+    //function to show the winner of the election
+    function showWinner () public view returns (string memory,uint256,uint256 ){
+        require (electionState == State.ENDED,"election is not ended");
+        uint256 maxVoteCount=0;
+        uint256 winnerId;
+        //finding a candidate with a highest vote count
+        for (uint256 i=1;i<=candidateCount;i++){
+            if (Candidates[i].voteCount>maxVoteCount){
+                maxVoteCount=Candidates[i].voteCount;
+                winnerId=i;
+            }
+        }
+        //function to get return
+        return (Candidates[winnerId].name,winnerId,maxVoteCount);
+    }
+   
+
+ //read function to get election result by using candidate id
+    function getResult(uint256 _candidateId) public view returns (uint256 ,string memory , uint256) {
+    require(electionState==State.ENDED,"election still not ended");
+    Candidate memory candidate =Candidates[_candidateId];
+    return (_candidateId,candidate.name,candidate.voteCount);
+    }
+    //function to end the election this can be done only by the admin
+    function endElection () public onlyAdminDuringElection{
+     electionState=State.ENDED;
+    }  
+   
+}
+
