@@ -1,0 +1,127 @@
+//SPDX-License-Identifier:MIT
+pragma solidity ^0.8.0;
+contract PatientsData{
+    address owner;
+
+    // structure to add Doctor details (struct contains : it allows to add group of variables those are
+    //different DataType under 1 single name.
+    struct Doctor{
+        string name;
+        string qualification;
+        uint256 age;
+        string workPlace;
+    }
+    //structure to add patient details
+    struct patient{
+        string name;
+        uint256 age;
+        string place;
+        string diseases;
+       
+    }
+    //structure to add medicine details
+    struct medicine{  
+        uint256 id;    
+        string name;
+        uint256 expiryDate;
+        uint256 dose;
+        uint256 price;
+    }
+    struct prescription {
+        uint256 []medicineIds;
+    }
+    //mapping to store medicine data
+    mapping (uint256 => medicine)  medicines;
+
+     //mapping to store doctor data
+    mapping (address  => Doctor)  doctors;
+
+     //mapping to store patient data
+    mapping (address => patient)  patients;
+
+    //mapping to store prescription
+    mapping (address => prescription) prescriptions;
+     
+    //modifier to onlydoctors can access this function
+    modifier onlyDoctors() {
+        require(owner == msg.sender, "Only Owner Can Call This Function");
+        _;
+    }
+    constructor() {
+        owner==msg.sender;
+    }
+    //write function to write doctors details
+    function addDoctor(uint256 _id, string memory _name,string memory _qualification,
+    uint256 _age, string memory _workPlace) public {
+        doctors[msg.sender].name=_name;
+        doctors[msg.sender].qualification=_qualification;
+        doctors[msg.sender].age=_age;
+        doctors[msg.sender].workPlace=_workPlace;
+    }
+    //write function to write patient details
+    function addPatient(uint256 _id, string memory _name,uint256 _age,string memory _place,string memory
+    _diseases) public {
+        patients[msg.sender].name=_name;
+        patients[msg.sender].age=_age;
+        patients[msg.sender].place=_place;
+        patients[msg.sender].diseases=_diseases;      
+    }
+    //write function to store medicine details
+    function addMedicine( uint256 _id,string memory _name,uint256 _expiryDate,uint256 _dose,
+        uint256 _price) public {
+            medicines[_id].name=_name;
+            medicines[_id].expiryDate=_expiryDate;
+            medicines[_id].dose=_dose;
+            medicines[_id].price=_price;
+        }
+    //function to prescribe the medicine to patient to using patient details
+    function prescribeMedicine(uint256 _id,address _patient) public onlyDoctors {
+        prescriptions[_patient].medicineIds.push(_id);
+    }
+    string disease;
+    //function to add diseases to patients
+    function addNewDisease(string memory _diseasesName) public {
+        disease=_diseasesName;
+    }
+    //function to update age by patient
+    function updatePatientDetails(uint256 _age) public {
+        patients[msg.sender].age=_age;
+    }
+    //Read function to get Doctor Details
+    function getDoctorDetails (address _doctor) public view returns (string memory name,string memory qualification,
+    uint256 age, string memory workPlace) {
+        return (doctors[_doctor].name,
+                doctors[_doctor].qualification,
+                doctors[_doctor].age,
+                doctors[_doctor].workPlace);
+    }
+    //read function for Patient
+    function getPatientDetails(address _patient)public view returns (string memory name,uint256 age,
+     string memory place,string memory diseases ) {
+        return(patients[_patient].name,
+               patients[_patient].age,
+               patients[_patient].place,
+               patients[_patient].diseases);
+     }
+    //read function to get medicines details
+    function getMedicineDetails(uint256 _id) public view returns( string memory name,uint256 expiryDate,
+    uint256 dose,uint256 price) {
+        return (medicines[_id].name,
+                medicines[_id].expiryDate,
+                medicines[_id].dose,
+                medicines[_id].price);
+    }
+    //read function to get view patient data by doctor
+    function viewPatientByDoctor(address _patient) public view onlyDoctors returns (string memory name,uint256 age,
+     string memory place,string memory diseases ) {
+        return(patients[_patient].name,
+               patients[_patient].age,
+               patients[_patient].place,
+               patients[_patient].diseases);
+    }
+    //read function to view prescribed medicines to doctor
+    function viewPrescribiedMedicine(address _patient) public view returns (uint256[] memory){
+        return prescriptions[_patient].medicineIds;
+       
+    }  
+}
