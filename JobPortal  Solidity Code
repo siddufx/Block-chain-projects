@@ -1,0 +1,115 @@
+//SPDX-License-Identifier: MIT
+pragma solidity ^0.8.0;
+contract JobPortal{
+//Admin person who deploy the contract so mentioned as msg.sender
+    address private admin;
+    constructor() {
+         admin = msg.sender;
+//Here constructor function setting up admin variable to the address of the account who deployes the smart contract 
+     }
+//enum is used here to cteate a user defined datatype
+     enum ApplicantType{skilled,unskilled}   
+
+//structure Applicant is used here to add applicant details means group of different datatypes in single structure.
+     struct Applicant{
+        uint256 applicantId;
+        string name;
+        uint8 age;
+        string place;
+        string workHistory;
+        uint256 contactNumber;
+        ApplicantType applicantType;
+ // Add mapping to store applications for each applicant
+        mapping(uint256 => bool) appliedJobs; // Job ID -> Applied (bool)
+       
+     }
+//structure Jobs is created here to add job details means different datatypes under single structure.
+     struct Job{
+        uint256 jobId;
+        string jobTitle;
+        string jobDescription;
+        uint256 salary;
+        string place;
+ // Add mapping to store applicant applications for each job
+        mapping(uint256 => bool) applicantsApplied; // Applicant ID -> Applied (bool)
+     }
+//Mapping  to assign key and value pairs
+    //mapping for getting  applicant details 
+    mapping (uint256 => Applicant) applicants;
+    
+
+    //mapping for assigning key and value pairs to job 
+    mapping (uint256 => Job) Jobs;
+    
+
+    //mapping for applicant Rating 
+    mapping(uint256 => uint256) applicantRating;
+
+    modifier OnlyAdmin() {
+    require (msg.sender==admin,"Only admin can call this");
+    _;      
+    }
+    //write function for addaApplicants and there details 
+    function addApplicant( uint256 _applicantId,string memory  _name,
+    uint8 _age,string memory _place, string memory  _workHistory, 
+    uint256 _contactNumber, ApplicantType _applicantType) public OnlyAdmin {
+        applicants[_applicantId].name=_name;
+        applicants[_applicantId].age=_age;
+        applicants[_applicantId].place=_place;
+        applicants[_applicantId].workHistory=_workHistory;
+        applicants[_applicantId].contactNumber=_contactNumber;
+        applicants[_applicantId].applicantType= _applicantType;
+    }
+    //Read function to get applicants details 
+    function getApplicantDetails(uint256 _applicantId) external view returns
+    (string memory name, uint8 age,string memory place, string memory workHistory,
+    uint256 contactNumber,ApplicantType applicantType) {
+        return (applicants[_applicantId].name,
+                applicants[_applicantId].age,
+                applicants[_applicantId].place,
+                applicants[_applicantId].workHistory,
+                applicants[_applicantId].contactNumber,
+                applicants[_applicantId].applicantType
+                );
+    }
+    //write function for taking input for add jobs 
+    function addJob(uint256 _jobId,string memory _jobTitle,string memory  _jobDescription,
+        uint256 _salary,string memory  _place) public {
+        Jobs[_jobId].jobTitle=_jobTitle;
+        Jobs[_jobId].jobDescription=_jobDescription;
+        Jobs[_jobId].salary=_salary;
+        Jobs[_jobId].place=_place;
+    }
+    //read function to get job details from blockchain
+    function getJobDetails(uint256 _jobId) external view returns ( string memory jobTitle,
+        string memory jobDescription, uint256 salary,string memory place) {
+            return (Jobs[_jobId].jobTitle,
+                    Jobs[_jobId].jobDescription,
+                    Jobs[_jobId].salary,
+                    Jobs[_jobId].place);
+    }
+    //read function about get applicant type here in this function 
+    function getApplicanttype(uint256 _applicantId) public view returns (ApplicantType){
+        return applicants[_applicantId].applicantType;
+    }
+    //function for apply for jobs 
+    function applyForJobs(uint256 _applicantId, uint256 _jobId) public {
+        
+        // Mark applicant as applied for the job
+        applicants[_applicantId].appliedJobs[_jobId]=true;
+
+        // Mark applicant as applied in the job details
+        Jobs[_jobId].applicantsApplied[_applicantId]=true;
+    }
+    
+   // Function to add applicant rating
+     function addApplicantRating(uint256 _applicantId, uint256 _rating) public {
+     require(_rating >= 1 && _rating <= 5, "Rating must be 1 to 5");
+     applicantRating[_applicantId] = _rating; 
+    } 
+
+// Function to get applicant rating
+     function getApplicantRating(uint256 _applicantId) public view returns (uint256) {
+     return applicantRating[_applicantId]; 
+    }
+}
